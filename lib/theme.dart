@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter/services.dart';
 
 class AppSpacing {
   // Spacing values
@@ -217,16 +218,20 @@ ThemeData get lightTheme => ThemeData(
     foregroundColor: LightModeColors.lightOnSurface,
     elevation: 0,
     scrolledUnderElevation: 0,
+    systemOverlayStyle: SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness:
+          Brightness.dark, // Dark icons for light background
+      statusBarBrightness:
+          Brightness.light, // Light brightness (dark text) for iOS
+    ),
   ),
   cardTheme: CardThemeData(
     elevation: 0,
     color: LightModeColors.lightCardBackground,
     shape: RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(12),
-      side: const BorderSide(
-        color: LightModeColors.lightBorder,
-        width: 1,
-      ),
+      side: const BorderSide(color: LightModeColors.lightBorder, width: 1),
     ),
   ),
   elevatedButtonTheme: ElevatedButtonThemeData(
@@ -259,7 +264,10 @@ ThemeData get lightTheme => ThemeData(
     ),
     focusedBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(12),
-      borderSide: const BorderSide(color: LightModeColors.lightPrimary, width: 2),
+      borderSide: const BorderSide(
+        color: LightModeColors.lightPrimary,
+        width: 2,
+      ),
     ),
     errorBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(12),
@@ -301,16 +309,20 @@ ThemeData get darkTheme => ThemeData(
     foregroundColor: DarkModeColors.darkOnSurface,
     elevation: 0,
     scrolledUnderElevation: 0,
+    systemOverlayStyle: SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness:
+          Brightness.light, // Light icons for dark background
+      statusBarBrightness:
+          Brightness.dark, // Dark brightness (light text) for iOS
+    ),
   ),
   cardTheme: CardThemeData(
     elevation: 0,
     color: DarkModeColors.darkCardBackground,
     shape: RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(12),
-      side: const BorderSide(
-        color: DarkModeColors.darkBorder,
-        width: 1,
-      ),
+      side: const BorderSide(color: DarkModeColors.darkBorder, width: 1),
     ),
   ),
   elevatedButtonTheme: ElevatedButtonThemeData(

@@ -14,10 +14,14 @@ class BudgetsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final budgetProvider = context.watch<BudgetProvider>();
     final expenseProvider = context.watch<ExpenseProvider>();
-    
+
     final now = DateTime.now();
     final thisMonthExpenses = expenseProvider.expenses
-        .where((e) => e.expenseDate.month == now.month && e.expenseDate.year == now.year)
+        .where(
+          (e) =>
+              e.expenseDate.month == now.month &&
+              e.expenseDate.year == now.year,
+        )
         .toList();
 
     return Scaffold(
@@ -31,175 +35,221 @@ class BudgetsScreen extends StatelessWidget {
         ],
       ),
       body: RefreshIndicator(
-        onRefresh: () => budgetProvider.loadBudgets(month: now.month, year: now.year),
+        onRefresh: () async {
+          // Trigger sync and then reload budgets
+          await budgetProvider.loadBudgets(month: now.month, year: now.year);
+        },
         child: budgetProvider.isLoading
             ? const Center(child: CircularProgressIndicator())
             : budgetProvider.budgets.isEmpty
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          FluentIcons.target_24_regular,
-                          size: 64,
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'No budgets set',
-                          style: context.textStyles.titleMedium?.withColor(
-                            Theme.of(context).colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        TextButton(
-                          onPressed: () => _showAddBudgetSheet(context),
-                          child: const Text('Set your first budget'),
-                        ),
-                      ],
+            ? Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      FluentIcons.target_24_regular,
+                      size: 64,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
-                  )
-                : ListView.builder(
-                    padding: AppSpacing.paddingMd,
-                    itemCount: budgetProvider.budgets.length,
-                    itemBuilder: (context, index) {
-                      final budget = budgetProvider.budgets[index];
-                      final spent = budgetProvider.calculateSpent(budget, thisMonthExpenses);
-                      final progress = budgetProvider.calculateProgress(budget, thisMonthExpenses);
-                      final isOver = progress > 1.0;
-                      final remaining = budget.limitAmount - spent;
+                    const SizedBox(height: 16),
+                    Text(
+                      'No budgets set',
+                      style: context.textStyles.titleMedium?.withColor(
+                        Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    TextButton(
+                      onPressed: () => _showAddBudgetSheet(context),
+                      child: const Text('Set your first budget'),
+                    ),
+                  ],
+                ),
+              )
+            : ListView.builder(
+                padding: AppSpacing.paddingMd,
+                itemCount: budgetProvider.budgets.length,
+                itemBuilder: (context, index) {
+                  final budget = budgetProvider.budgets[index];
+                  final spent = budgetProvider.calculateSpent(
+                    budget,
+                    thisMonthExpenses,
+                  );
+                  final progress = budgetProvider.calculateProgress(
+                    budget,
+                    thisMonthExpenses,
+                  );
+                  final isOver = progress > 1.0;
+                  final remaining = budget.limitAmount - spent;
 
-                      return Card(
-                        margin: const EdgeInsets.only(bottom: 12),
-                        child: Padding(
-                          padding: AppSpacing.paddingMd,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                  return Card(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    child: Padding(
+                      padding: AppSpacing.paddingMd,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
                             children: [
-                              Row(
-                                children: [
-                                  CircleAvatar(
-                                    backgroundColor: isOver
-                                        ? Theme.of(context).colorScheme.errorContainer
-                                        : Theme.of(context).colorScheme.primaryContainer,
-                                    child: Icon(
-                                      ExpenseCategory.getIcon(budget.category),
-                                      color: isOver
-                                          ? Theme.of(context).colorScheme.error
-                                          : Theme.of(context).colorScheme.primary,
-                                      size: 20,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          budget.category,
-                                          style: context.textStyles.titleMedium,
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          '${DateFormat('MMMM y').format(DateTime(budget.year, budget.month))}',
-                                          style: context.textStyles.bodySmall?.withColor(
-                                            Theme.of(context).colorScheme.onSurfaceVariant,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  IconButton(
-                                    icon: const Icon(FluentIcons.delete_24_regular, size: 20),
-                                    color: Theme.of(context).colorScheme.error,
-                                    onPressed: () => _confirmDelete(context, budget.id),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 16),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        'Spent',
-                                        style: context.textStyles.bodySmall?.withColor(
-                                          Theme.of(context).colorScheme.onSurfaceVariant,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        NumberFormat.currency(symbol: '\$').format(spent),
-                                        style: context.textStyles.titleLarge?.bold.withColor(
-                                          isOver
-                                              ? Theme.of(context).colorScheme.error
-                                              : Theme.of(context).colorScheme.primary,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  Column(
-                                    crossAxisAlignment: CrossAxisAlignment.end,
-                                    children: [
-                                      Text(
-                                        isOver ? 'Over Budget' : 'Remaining',
-                                        style: context.textStyles.bodySmall?.withColor(
-                                          Theme.of(context).colorScheme.onSurfaceVariant,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        NumberFormat.currency(symbol: '\$').format(remaining.abs()),
-                                        style: context.textStyles.titleMedium?.withColor(
-                                          isOver
-                                              ? Theme.of(context).colorScheme.error
-                                              : Theme.of(context).colorScheme.onSurfaceVariant,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 12),
-                              ClipRRect(
-                                borderRadius: BorderRadius.circular(4),
-                                child: LinearProgressIndicator(
-                                  value: progress > 1.0 ? 1.0 : progress,
-                                  minHeight: 12,
-                                  backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
-                                  valueColor: AlwaysStoppedAnimation(
-                                    isOver
-                                        ? Theme.of(context).colorScheme.error
-                                        : Theme.of(context).colorScheme.primary,
-                                  ),
+                              CircleAvatar(
+                                backgroundColor: isOver
+                                    ? Theme.of(
+                                        context,
+                                      ).colorScheme.errorContainer
+                                    : Theme.of(
+                                        context,
+                                      ).colorScheme.primaryContainer,
+                                child: Icon(
+                                  ExpenseCategory.getIcon(budget.category),
+                                  color: isOver
+                                      ? Theme.of(context).colorScheme.error
+                                      : Theme.of(context).colorScheme.primary,
+                                  size: 20,
                                 ),
                               ),
-                              const SizedBox(height: 8),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      budget.category,
+                                      style: context.textStyles.titleMedium,
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      '${DateFormat('MMMM y').format(DateTime(budget.year, budget.month))}',
+                                      style: context.textStyles.bodySmall
+                                          ?.withColor(
+                                            Theme.of(
+                                              context,
+                                            ).colorScheme.onSurfaceVariant,
+                                          ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              IconButton(
+                                icon: const Icon(
+                                  FluentIcons.delete_24_regular,
+                                  size: 20,
+                                ),
+                                color: Theme.of(context).colorScheme.error,
+                                onPressed: () =>
+                                    _confirmDelete(context, budget.id),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    '${(progress * 100).toStringAsFixed(1)}%',
-                                    style: context.textStyles.bodySmall?.withColor(
-                                      Theme.of(context).colorScheme.onSurfaceVariant,
-                                    ),
+                                    'Spent',
+                                    style: context.textStyles.bodySmall
+                                        ?.withColor(
+                                          Theme.of(
+                                            context,
+                                          ).colorScheme.onSurfaceVariant,
+                                        ),
                                   ),
+                                  const SizedBox(height: 4),
                                   Text(
-                                    'Limit: ${NumberFormat.currency(symbol: '\$').format(budget.limitAmount)}',
-                                    style: context.textStyles.bodySmall?.withColor(
-                                      Theme.of(context).colorScheme.onSurfaceVariant,
-                                    ),
+                                    NumberFormat.currency(
+                                      symbol: '\$',
+                                    ).format(spent),
+                                    style: context.textStyles.titleLarge?.bold
+                                        .withColor(
+                                          isOver
+                                              ? Theme.of(
+                                                  context,
+                                                ).colorScheme.error
+                                              : Theme.of(
+                                                  context,
+                                                ).colorScheme.primary,
+                                        ),
+                                  ),
+                                ],
+                              ),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  Text(
+                                    isOver ? 'Over Budget' : 'Remaining',
+                                    style: context.textStyles.bodySmall
+                                        ?.withColor(
+                                          Theme.of(
+                                            context,
+                                          ).colorScheme.onSurfaceVariant,
+                                        ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    NumberFormat.currency(
+                                      symbol: '\$',
+                                    ).format(remaining.abs()),
+                                    style: context.textStyles.titleMedium
+                                        ?.withColor(
+                                          isOver
+                                              ? Theme.of(
+                                                  context,
+                                                ).colorScheme.error
+                                              : Theme.of(
+                                                  context,
+                                                ).colorScheme.onSurfaceVariant,
+                                        ),
                                   ),
                                 ],
                               ),
                             ],
                           ),
-                        ),
-                      );
-                    },
-                  ),
+                          const SizedBox(height: 12),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(4),
+                            child: LinearProgressIndicator(
+                              value: progress > 1.0 ? 1.0 : progress,
+                              minHeight: 12,
+                              backgroundColor: Theme.of(
+                                context,
+                              ).colorScheme.surfaceContainerHighest,
+                              valueColor: AlwaysStoppedAnimation(
+                                isOver
+                                    ? Theme.of(context).colorScheme.error
+                                    : Theme.of(context).colorScheme.primary,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                '${(progress * 100).toStringAsFixed(1)}%',
+                                style: context.textStyles.bodySmall?.withColor(
+                                  Theme.of(
+                                    context,
+                                  ).colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                              Text(
+                                'Limit: ${NumberFormat.currency(symbol: '\$').format(budget.limitAmount)}',
+                                style: context.textStyles.bodySmall?.withColor(
+                                  Theme.of(
+                                    context,
+                                  ).colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
       ),
     );
   }
@@ -228,11 +278,13 @@ class BudgetsScreen extends StatelessWidget {
               Navigator.of(context).pop();
               final budgetProvider = context.read<BudgetProvider>();
               final success = await budgetProvider.deleteBudget(budgetId);
-              
+
               if (context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text(success ? 'Budget deleted' : 'Failed to delete budget'),
+                    content: Text(
+                      success ? 'Budget deleted' : 'Failed to delete budget',
+                    ),
                   ),
                 );
               }
@@ -258,7 +310,7 @@ class AddBudgetSheet extends StatefulWidget {
 class _AddBudgetSheetState extends State<AddBudgetSheet> {
   final _formKey = GlobalKey<FormState>();
   final _limitController = TextEditingController();
-  
+
   String _selectedCategory = ExpenseCategory.all.first;
   int _selectedMonth = DateTime.now().month;
   int _selectedYear = DateTime.now().year;
@@ -289,7 +341,9 @@ class _AddBudgetSheetState extends State<AddBudgetSheet> {
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(budgetProvider.errorMessage ?? 'Failed to save budget'),
+            content: Text(
+              budgetProvider.errorMessage ?? 'Failed to save budget',
+            ),
             backgroundColor: Theme.of(context).colorScheme.error,
           ),
         );
@@ -347,7 +401,9 @@ class _AddBudgetSheetState extends State<AddBudgetSheet> {
               const SizedBox(height: 16),
               TextFormField(
                 controller: _limitController,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
                 decoration: const InputDecoration(
                   labelText: 'Budget Limit',
                   hintText: '0.00',
@@ -373,43 +429,55 @@ class _AddBudgetSheetState extends State<AddBudgetSheet> {
                   Expanded(
                     child: DropdownButtonFormField<int>(
                       value: _selectedMonth,
+                      isExpanded: true, // 🔑 critical
                       decoration: const InputDecoration(
                         labelText: 'Month',
-                        prefixIcon: Icon(FluentIcons.calendar_24_regular),
+                        prefixIcon: Icon(
+                          FluentIcons.calendar_24_regular,
+                          size: 20, // 🔑 prevent overflow
+                        ),
                       ),
                       items: List.generate(12, (index) {
                         final month = index + 1;
-                        return DropdownMenuItem(
+                        return DropdownMenuItem<int>(
                           value: month,
-                          child: Text(DateFormat('MMMM').format(DateTime(2024, month))),
+                          child: Text(
+                            DateFormat('MMMM').format(DateTime(2024, month)),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         );
                       }),
                       onChanged: (value) {
-                        if (value != null) setState(() => _selectedMonth = value);
+                        if (value != null)
+                          setState(() => _selectedMonth = value);
                       },
                     ),
                   ),
+
                   const SizedBox(width: 12),
+
                   Expanded(
                     child: DropdownButtonFormField<int>(
                       value: _selectedYear,
-                      decoration: const InputDecoration(
-                        labelText: 'Year',
-                      ),
+                      isExpanded: true, // 🔑 keep symmetry
+                      decoration: const InputDecoration(labelText: 'Year'),
                       items: List.generate(5, (index) {
                         final year = DateTime.now().year - 2 + index;
-                        return DropdownMenuItem(
+                        return DropdownMenuItem<int>(
                           value: year,
                           child: Text(year.toString()),
                         );
                       }),
                       onChanged: (value) {
-                        if (value != null) setState(() => _selectedYear = value);
+                        if (value != null)
+                          setState(() => _selectedYear = value);
                       },
                     ),
                   ),
                 ],
               ),
+
               const SizedBox(height: 24),
               SizedBox(
                 width: double.infinity,

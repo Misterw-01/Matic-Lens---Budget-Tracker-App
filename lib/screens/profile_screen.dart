@@ -3,6 +3,8 @@ import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:provider/provider.dart';
 import 'package:maticlens/providers/auth_provider.dart';
 import 'package:maticlens/screens/login_screen.dart';
+import 'package:maticlens/screens/edit_profile_screen.dart'; // NEW
+import 'package:maticlens/screens/change_password_screen.dart'; // NEW
 import 'package:maticlens/theme.dart';
 
 class ProfileScreen extends StatelessWidget {
@@ -14,9 +16,7 @@ class ProfileScreen extends StatelessWidget {
     final user = authProvider.currentUser;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Profile'),
-      ),
+      appBar: AppBar(title: const Text('Profile')),
       body: SingleChildScrollView(
         padding: AppSpacing.paddingLg,
         child: Column(
@@ -51,18 +51,22 @@ class ProfileScreen extends StatelessWidget {
                     icon: FluentIcons.person_24_regular,
                     title: 'Account Information',
                     onTap: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Feature coming soon')),
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const EditProfileScreen(),
+                        ),
                       );
                     },
                   ),
                   const Divider(height: 1),
                   ProfileMenuItem(
-                    icon: FluentIcons.settings_24_regular,
-                    title: 'Settings',
+                    icon: FluentIcons.password_24_regular,
+                    title: 'Update Password',
                     onTap: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Feature coming soon')),
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const ChangePasswordScreen(),
+                        ),
                       );
                     },
                   ),
@@ -97,7 +101,7 @@ class ProfileScreen extends StatelessWidget {
       builder: (context) => AlertDialog(
         title: const Text('About MaticLens'),
         content: const Text(
-          'MaticLens is your intelligent finance tracker that helps you manage expenses and budgets effortlessly.\n\nVersion 1.0.0\n\nBuilt with Flutter & Laravel',
+          'MaticLens is your intelligent finance tracker that helps you manage expenses and budgets effortlessly.\n\nVersion 1.0.0\n\nAttomaticSystems',
         ),
         actions: [
           TextButton(
@@ -112,20 +116,20 @@ class ProfileScreen extends StatelessWidget {
   void _confirmLogout(BuildContext context) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: const Text('Sign Out'),
         content: const Text('Are you sure you want to sign out?'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: () => Navigator.of(dialogContext).pop(),
             child: const Text('Cancel'),
           ),
           TextButton(
             onPressed: () async {
-              Navigator.of(context).pop();
+              Navigator.of(dialogContext).pop();
               final authProvider = context.read<AuthProvider>();
               await authProvider.logout();
-              
+
               if (context.mounted) {
                 Navigator.of(context).pushAndRemoveUntil(
                   MaterialPageRoute(builder: (_) => const LoginScreen()),

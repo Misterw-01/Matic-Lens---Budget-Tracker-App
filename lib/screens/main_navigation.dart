@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
+import 'package:maticlens/screens/income_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:maticlens/providers/expense_provider.dart';
 import 'package:maticlens/providers/budget_provider.dart';
@@ -21,8 +22,10 @@ class _MainNavigationState extends State<MainNavigation> {
   final List<Widget> _screens = const [
     DashboardScreen(),
     ExpensesScreen(),
+    IncomeScreen(),
     BudgetsScreen(),
     ProfileScreen(),
+
   ];
 
   @override
@@ -65,6 +68,14 @@ class _MainNavigationState extends State<MainNavigation> {
             selectedIcon: Icon(FluentIcons.receipt_24_filled),
             label: 'Expenses',
           ),
+
+          //add Income Screen
+          NavigationDestination(
+            icon: Icon(FluentIcons.money_24_regular),
+            selectedIcon: Icon(FluentIcons.money_24_filled),
+            label: 'Income',
+          ),
+
           NavigationDestination(
             icon: Icon(FluentIcons.target_24_regular),
             selectedIcon: Icon(FluentIcons.target_24_filled),

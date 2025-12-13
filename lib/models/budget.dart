@@ -1,11 +1,24 @@
+import 'package:hive/hive.dart';
+
+part 'budget.g.dart';
+
+@HiveType(typeId: 2)
 class Budget {
+  @HiveField(0)
   final String id;
+  @HiveField(1)
   final String userId;
+  @HiveField(2)
   final String category;
+  @HiveField(3)
   final double limitAmount;
+  @HiveField(4)
   final int month;
+  @HiveField(5)
   final int year;
+  @HiveField(6)
   final DateTime createdAt;
+  @HiveField(7)
   final DateTime updatedAt;
 
   Budget({

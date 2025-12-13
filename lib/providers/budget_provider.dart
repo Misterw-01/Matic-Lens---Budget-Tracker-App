@@ -2,14 +2,16 @@ import 'package:flutter/foundation.dart';
 import 'package:maticlens/models/budget.dart';
 import 'package:maticlens/models/expense.dart';
 import 'package:maticlens/services/budget_service.dart';
+import 'package:maticlens/services/sync_service.dart';
 
 class BudgetProvider with ChangeNotifier {
   final BudgetService _budgetService;
+  final SyncService _syncService;
   List<Budget> _budgets = [];
   bool _isLoading = false;
   String? _errorMessage;
 
-  BudgetProvider(this._budgetService);
+  BudgetProvider(this._budgetService, this._syncService);
 
   List<Budget> get budgets => _budgets;
   bool get isLoading => _isLoading;
@@ -21,6 +23,11 @@ class BudgetProvider with ChangeNotifier {
     notifyListeners();
 
     try {
+      // Trigger sync first if there are pending items
+      if (_syncService.hasPendingSync) {
+        await _syncService.sync();
+      }
+
       _budgets = await _budgetService.getBudgets(month: month, year: year);
       _isLoading = false;
       notifyListeners();
@@ -93,25 +100,29 @@ class BudgetProvider with ChangeNotifier {
   }
 
   double calculateProgress(Budget budget, List<Expense> expenses) {
-    final categoryExpenses = expenses.where((e) =>
-        e.category == budget.category &&
-        e.expenseDate.month == budget.month &&
-        e.expenseDate.year == budget.year);
+    final categoryExpenses = expenses.where(
+      (e) =>
+          e.category == budget.category &&
+          e.expenseDate.month == budget.month &&
+          e.expenseDate.year == budget.year,
+    );
 
     final totalSpent = categoryExpenses.fold(0.0, (sum, e) => sum + e.amount);
     return totalSpent / budget.limitAmount;
   }
 
   double calculateSpent(Budget budget, List<Expense> expenses) {
-    final categoryExpenses = expenses.where((e) =>
-        e.category == budget.category &&
-        e.expenseDate.month == budget.month &&
-        e.expenseDate.year == budget.year);
+    final categoryExpenses = expenses.where(
+      (e) =>
+          e.category == budget.category &&
+          e.expenseDate.month == budget.month &&
+          e.expenseDate.year == budget.year,
+    );
 
     return categoryExpenses.fold(0.0, (sum, e) => sum + e.amount);
   }
 
-  bool isOverBudget(Budget budget, List<Expense> expenses) => 
+  bool isOverBudget(Budget budget, List<Expense> expenses) =>
       calculateProgress(budget, expenses) > 1.0;
 
   void clearError() {

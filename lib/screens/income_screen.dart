@@ -1,36 +1,36 @@
 import 'package:flutter/material.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
-import 'package:maticlens/constants/cartegories.dart';
+import 'package:maticlens/constants/income_categories.dart'; // NEW
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
-import 'package:maticlens/providers/expense_provider.dart';
+import 'package:maticlens/providers/income_provider.dart'; // NEW
 import 'package:maticlens/theme.dart';
-import 'package:maticlens/widgets/add_expense_sheet.dart';
+import 'package:maticlens/widgets/add_income_sheet.dart'; // NEW
 
-class ExpensesScreen extends StatefulWidget {
-  const ExpensesScreen({super.key});
+class IncomeScreen extends StatefulWidget {
+  const IncomeScreen({super.key});
 
   @override
-  State<ExpensesScreen> createState() => _ExpensesScreenState();
+  State<IncomeScreen> createState() => _IncomeScreenState();
 }
 
-class _ExpensesScreenState extends State<ExpensesScreen> {
+class _IncomeScreenState extends State<IncomeScreen> {
   @override
   void initState() {
     super.initState();
     // Clear any filters that may have been set by the dashboard
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<ExpenseProvider>().clearFilters();
+      context.read<IncomeProvider>().clearFilters();
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    final expenseProvider = context.watch<ExpenseProvider>();
+    final incomeProvider = context.watch<IncomeProvider>();
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Expenses'),
+        title: const Text('Income'),
         actions: [
           IconButton(
             icon: const Icon(FluentIcons.filter_24_regular),
@@ -41,31 +41,31 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
             onPressed: () => showModalBottomSheet(
               context: context,
               isScrollControlled: true,
-              builder: (_) => const AddExpenseSheet(),
+              builder: (_) => const AddIncomeSheet(),
             ),
           ),
         ],
       ),
       body: RefreshIndicator(
         onRefresh: () async {
-          // Trigger sync and then reload expenses
-          await expenseProvider.loadExpenses();
+          // Trigger sync and then reload incomes
+          await incomeProvider.loadIncomes();
         },
-        child: expenseProvider.isLoading
+        child: incomeProvider.isLoading
             ? const Center(child: CircularProgressIndicator())
-            : expenseProvider.filteredExpenses.isEmpty
+            : incomeProvider.filteredIncomes.isEmpty
             ? Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Icon(
-                      FluentIcons.receipt_24_regular,
+                      FluentIcons.money_24_regular,
                       size: 64,
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      'No expenses found',
+                      'No income records found',
                       style: context.textStyles.titleMedium?.withColor(
                         Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
@@ -75,19 +75,18 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                       onPressed: () => showModalBottomSheet(
                         context: context,
                         isScrollControlled: true,
-                        builder: (_) => const AddExpenseSheet(),
+                        builder: (_) => const AddIncomeSheet(),
                       ),
-                      child: const Text('Add your first expense'),
+                      child: const Text('Add your first income'),
                     ),
                   ],
                 ),
               )
             : Column(
                 children: [
-                  if (expenseProvider.selectedCategory != null ||
-                      expenseProvider.selectedPaymentMethod != null ||
-                      expenseProvider.startDate != null ||
-                      expenseProvider.endDate != null)
+                  if (incomeProvider.selectedCategory != null ||
+                      incomeProvider.startDate != null ||
+                      incomeProvider.endDate != null)
                     Container(
                       padding: AppSpacing.paddingMd,
                       color: Theme.of(context).colorScheme.primaryContainer,
@@ -108,12 +107,14 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                             ),
                           ),
                           TextButton(
-                            onPressed: expenseProvider.clearFilters,
+                            onPressed: incomeProvider.clearFilters,
                             child: const Text('Clear'),
                           ),
                         ],
                       ),
                     ),
+
+                  /// Summary Row
                   Container(
                     padding: AppSpacing.paddingMd,
                     color: Theme.of(
@@ -123,13 +124,13 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          '${expenseProvider.filteredExpenses.length} transactions',
+                          '${incomeProvider.filteredIncomes.length} transactions',
                           style: context.textStyles.bodyMedium?.withColor(
                             Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
                         ),
                         Text(
-                          'Total: ${NumberFormat.currency(symbol: '\$').format(expenseProvider.totalExpenses)}',
+                          'Total: ${NumberFormat.currency(symbol: '\$').format(incomeProvider.totalIncome)}',
                           style: context.textStyles.titleMedium?.bold.withColor(
                             Theme.of(context).colorScheme.primary,
                           ),
@@ -137,12 +138,14 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                       ],
                     ),
                   ),
+
+                  /// Income list
                   Expanded(
                     child: ListView.builder(
                       padding: AppSpacing.paddingMd,
-                      itemCount: expenseProvider.filteredExpenses.length,
+                      itemCount: incomeProvider.filteredIncomes.length,
                       itemBuilder: (context, index) {
-                        final expense = expenseProvider.filteredExpenses[index];
+                        final income = incomeProvider.filteredIncomes[index];
                         return Card(
                           margin: const EdgeInsets.only(bottom: 8),
                           child: ListTile(
@@ -151,7 +154,7 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                                 context,
                               ).colorScheme.primaryContainer,
                               child: Icon(
-                                ExpenseCategory.getIcon(expense.category),
+                                IncomeCategory.getIcon(income.category),
                                 color: Theme.of(context).colorScheme.primary,
                                 size: 20,
                               ),
@@ -160,7 +163,7 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                               children: [
                                 Expanded(
                                   child: Text(
-                                    expense.category,
+                                    income.category,
                                     style: context.textStyles.titleMedium,
                                     overflow: TextOverflow.ellipsis,
                                   ),
@@ -168,7 +171,7 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                                 Text(
                                   NumberFormat.currency(
                                     symbol: '\$',
-                                  ).format(expense.amount),
+                                  ).format(income.amount),
                                   style: context.textStyles.titleMedium?.bold
                                       .withColor(
                                         Theme.of(context).colorScheme.primary,
@@ -179,10 +182,10 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                             subtitle: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                if (expense.note.isNotEmpty) ...[
+                                if (income.note.isNotEmpty) ...[
                                   const SizedBox(height: 4),
                                   Text(
-                                    expense.note,
+                                    income.note,
                                     style: context.textStyles.bodySmall,
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
@@ -191,28 +194,6 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                                 const SizedBox(height: 4),
                                 Row(
                                   children: [
-                                    Icon(
-                                      PaymentMethod.getIcon(
-                                        expense.paymentMethod,
-                                      ),
-                                      size: 12,
-                                      color: Theme.of(
-                                        context,
-                                      ).colorScheme.onSurfaceVariant,
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      PaymentMethod.getLabel(
-                                        expense.paymentMethod,
-                                      ),
-                                      style: context.textStyles.bodySmall
-                                          ?.withColor(
-                                            Theme.of(
-                                              context,
-                                            ).colorScheme.onSurfaceVariant,
-                                          ),
-                                    ),
-                                    const SizedBox(width: 12),
                                     Icon(
                                       FluentIcons.calendar_24_regular,
                                       size: 12,
@@ -224,7 +205,7 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                                     Text(
                                       DateFormat(
                                         'MMM d, y',
-                                      ).format(expense.expenseDate),
+                                      ).format(income.incomeDate),
                                       style: context.textStyles.bodySmall
                                           ?.withColor(
                                             Theme.of(
@@ -243,7 +224,7 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                               ),
                               color: Theme.of(context).colorScheme.error,
                               onPressed: () =>
-                                  _confirmDelete(context, expense.id),
+                                  _confirmDelete(context, income.id),
                             ),
                           ),
                         );
@@ -257,26 +238,26 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
   }
 
   void _showFilterSheet(BuildContext context) {
-    final expenseProvider = context.read<ExpenseProvider>();
-
+    final incomeProvider = context.read<IncomeProvider>();
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      builder: (context) => FilterSheet(
-        initialCategory: expenseProvider.selectedCategory,
-        initialPaymentMethod: expenseProvider.selectedPaymentMethod,
-        initialStartDate: expenseProvider.startDate,
-        initialEndDate: expenseProvider.endDate,
+      builder: (context) => IncomeFilterSheet(
+        initialCategory: incomeProvider.selectedCategory,
+        initialStartDate: incomeProvider.startDate,
+        initialEndDate: incomeProvider.endDate,
       ),
     );
   }
 
-  void _confirmDelete(BuildContext context, String expenseId) {
+  void _confirmDelete(BuildContext context, String incomeId) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete Expense'),
-        content: const Text('Are you sure you want to delete this expense?'),
+        title: const Text('Delete Income'),
+        content: const Text(
+          'Are you sure you want to delete this income entry?',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
@@ -285,14 +266,14 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
           TextButton(
             onPressed: () async {
               Navigator.of(context).pop();
-              final expenseProvider = context.read<ExpenseProvider>();
-              final success = await expenseProvider.deleteExpense(expenseId);
+              final incomeProvider = context.read<IncomeProvider>();
+              final success = await incomeProvider.deleteIncome(incomeId);
 
               if (context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(
-                      success ? 'Expense deleted' : 'Failed to delete expense',
+                      success ? 'Income deleted' : 'Failed to delete income',
                     ),
                   ),
                 );
@@ -309,27 +290,28 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
   }
 }
 
-class FilterSheet extends StatefulWidget {
+// ----------------------------------------------------------------------
+// FILTER SHEET FOR INCOME
+// ----------------------------------------------------------------------
+
+class IncomeFilterSheet extends StatefulWidget {
   final String? initialCategory;
-  final String? initialPaymentMethod;
   final DateTime? initialStartDate;
   final DateTime? initialEndDate;
 
-  const FilterSheet({
+  const IncomeFilterSheet({
     super.key,
     this.initialCategory,
-    this.initialPaymentMethod,
     this.initialStartDate,
     this.initialEndDate,
   });
 
   @override
-  State<FilterSheet> createState() => _FilterSheetState();
+  State<IncomeFilterSheet> createState() => _IncomeFilterSheetState();
 }
 
-class _FilterSheetState extends State<FilterSheet> {
+class _IncomeFilterSheetState extends State<IncomeFilterSheet> {
   String? _selectedCategory;
-  String? _selectedPaymentMethod;
   DateTime? _startDate;
   DateTime? _endDate;
 
@@ -337,7 +319,6 @@ class _FilterSheetState extends State<FilterSheet> {
   void initState() {
     super.initState();
     _selectedCategory = widget.initialCategory;
-    _selectedPaymentMethod = widget.initialPaymentMethod;
     _startDate = widget.initialStartDate;
     _endDate = widget.initialEndDate;
   }
@@ -349,9 +330,7 @@ class _FilterSheetState extends State<FilterSheet> {
       firstDate: DateTime(2020),
       lastDate: DateTime.now(),
     );
-    if (picked != null) {
-      setState(() => _startDate = picked);
-    }
+    if (picked != null) setState(() => _startDate = picked);
   }
 
   Future<void> _selectEndDate(BuildContext context) async {
@@ -361,16 +340,13 @@ class _FilterSheetState extends State<FilterSheet> {
       firstDate: _startDate ?? DateTime(2020),
       lastDate: DateTime.now(),
     );
-    if (picked != null) {
-      setState(() => _endDate = picked);
-    }
+    if (picked != null) setState(() => _endDate = picked);
   }
 
   void _applyFilters() {
-    final expenseProvider = context.read<ExpenseProvider>();
-    expenseProvider.setFilters(
+    final provider = context.read<IncomeProvider>();
+    provider.setFilters(
       category: _selectedCategory,
-      paymentMethod: _selectedPaymentMethod,
       startDate: _startDate,
       endDate: _endDate,
     );
@@ -392,19 +368,18 @@ class _FilterSheetState extends State<FilterSheet> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  'Filter Expenses',
-                  style: context.textStyles.headlineSmall,
-                ),
+                Text('Filter Income', style: context.textStyles.headlineSmall),
                 IconButton(
                   icon: const Icon(FluentIcons.dismiss_24_regular),
                   onPressed: () => Navigator.of(context).pop(),
                 ),
               ],
             ),
+
             const SizedBox(height: 24),
             Text('Category', style: context.textStyles.titleMedium),
             const SizedBox(height: 12),
+
             Wrap(
               spacing: 8,
               runSpacing: 8,
@@ -414,7 +389,7 @@ class _FilterSheetState extends State<FilterSheet> {
                   selected: _selectedCategory == null,
                   onSelected: (_) => setState(() => _selectedCategory = null),
                 ),
-                ...ExpenseCategory.all.map((category) {
+                ...IncomeCategory.all.map((category) {
                   return ChoiceChip(
                     label: Text(category),
                     selected: _selectedCategory == category,
@@ -424,32 +399,11 @@ class _FilterSheetState extends State<FilterSheet> {
                 }),
               ],
             ),
-            const SizedBox(height: 24),
-            Text('Payment Method', style: context.textStyles.titleMedium),
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                ChoiceChip(
-                  label: const Text('All'),
-                  selected: _selectedPaymentMethod == null,
-                  onSelected: (_) =>
-                      setState(() => _selectedPaymentMethod = null),
-                ),
-                ...PaymentMethod.all.map((method) {
-                  return ChoiceChip(
-                    label: Text(PaymentMethod.getLabel(method)),
-                    selected: _selectedPaymentMethod == method,
-                    onSelected: (_) =>
-                        setState(() => _selectedPaymentMethod = method),
-                  );
-                }),
-              ],
-            ),
+
             const SizedBox(height: 24),
             Text('Date Range', style: context.textStyles.titleMedium),
             const SizedBox(height: 12),
+
             Row(
               children: [
                 Expanded(
@@ -475,6 +429,7 @@ class _FilterSheetState extends State<FilterSheet> {
                 ),
               ],
             ),
+
             const SizedBox(height: 24),
             SizedBox(
               width: double.infinity,
@@ -483,6 +438,7 @@ class _FilterSheetState extends State<FilterSheet> {
                 child: const Text('Apply Filters'),
               ),
             ),
+
             const SizedBox(height: 16),
           ],
         ),

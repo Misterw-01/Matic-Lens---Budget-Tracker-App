@@ -1,9 +1,11 @@
 import 'package:flutter/foundation.dart';
 import 'package:maticlens/models/expense.dart';
 import 'package:maticlens/services/expense_service.dart';
+import 'package:maticlens/services/sync_service.dart';
 
 class ExpenseProvider with ChangeNotifier {
   final ExpenseService _expenseService;
+  final SyncService _syncService;
   List<Expense> _expenses = [];
   bool _isLoading = false;
   String? _errorMessage;
@@ -13,7 +15,7 @@ class ExpenseProvider with ChangeNotifier {
   DateTime? _startDate;
   DateTime? _endDate;
 
-  ExpenseProvider(this._expenseService);
+  ExpenseProvider(this._expenseService, this._syncService);
 
   List<Expense> get expenses => _expenses;
   bool get isLoading => _isLoading;
@@ -27,30 +29,48 @@ class ExpenseProvider with ChangeNotifier {
     var filtered = _expenses;
 
     if (_selectedCategory != null) {
-      filtered = filtered.where((e) => e.category == _selectedCategory).toList();
+      filtered = filtered
+          .where((e) => e.category == _selectedCategory)
+          .toList();
     }
 
     if (_selectedPaymentMethod != null) {
-      filtered = filtered.where((e) => e.paymentMethod == _selectedPaymentMethod).toList();
+      filtered = filtered
+          .where((e) => e.paymentMethod == _selectedPaymentMethod)
+          .toList();
     }
 
     if (_startDate != null) {
-      filtered = filtered.where((e) => e.expenseDate.isAfter(_startDate!) || e.expenseDate.isAtSameMomentAs(_startDate!)).toList();
+      filtered = filtered
+          .where(
+            (e) =>
+                e.expenseDate.isAfter(_startDate!) ||
+                e.expenseDate.isAtSameMomentAs(_startDate!),
+          )
+          .toList();
     }
 
     if (_endDate != null) {
-      filtered = filtered.where((e) => e.expenseDate.isBefore(_endDate!) || e.expenseDate.isAtSameMomentAs(_endDate!)).toList();
+      filtered = filtered
+          .where(
+            (e) =>
+                e.expenseDate.isBefore(_endDate!) ||
+                e.expenseDate.isAtSameMomentAs(_endDate!),
+          )
+          .toList();
     }
 
     return filtered..sort((a, b) => b.expenseDate.compareTo(a.expenseDate));
   }
 
-  double get totalExpenses => filteredExpenses.fold(0.0, (sum, expense) => sum + expense.amount);
+  double get totalExpenses =>
+      filteredExpenses.fold(0.0, (sum, expense) => sum + expense.amount);
 
   Map<String, double> get categoryTotals {
     final totals = <String, double>{};
     for (var expense in filteredExpenses) {
-      totals[expense.category] = (totals[expense.category] ?? 0) + expense.amount;
+      totals[expense.category] =
+          (totals[expense.category] ?? 0) + expense.amount;
     }
     return totals;
   }
@@ -61,6 +81,11 @@ class ExpenseProvider with ChangeNotifier {
     notifyListeners();
 
     try {
+      // Trigger sync first if there are pending items
+      if (_syncService.hasPendingSync) {
+        await _syncService.sync();
+      }
+
       _expenses = await _expenseService.getExpenses();
       _isLoading = false;
       notifyListeners();
